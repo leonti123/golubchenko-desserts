@@ -1,0 +1,38 @@
+name: sync from VK
+on:
+  schedule:
+    # GitHub starts scheduled jobs late and skips busy minutes, so use an off-peak minute.
+    # In practice runs come every few hours: promise «в течение дня», not «каждый час»
+    - cron: "23 * * * *"
+  workflow_dispatch:
+  # the «Обновить сайт» button in the VK mini app saves market.json through Apps Script
+  push:
+    branches: [main]
+    paths: [_sync/data/market.json, _sync/items.json, _sync/clips.json, _sync/index.src.html, _sync/sync.py]
+permissions:
+  contents: write
+concurrency:
+  group: vk-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet pillow==11.1.0
+      - name: Read the VK group and rebuild the page
+        env:
+          VK_TOKEN: ${{ secrets.VK_TOKEN }}
+        run: |
+          if [ -z "$VK_TOKEN" ]; then echo "VK_TOKEN secret is not set yet, skipping"; exit 0; fi
+          python _sync/sync.py
+      - name: Commit if something changed
+        run: |
+          git add index.html img _sync/data/manifest.json
+          if git diff --cached --quiet; then echo "nothing to commit"; exit 0; fi
+          git -c user.name="vk-sync" -c user.email="actions@users.noreply.github.com" commit -m "sync from VK"
+          for i in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && break; sleep 5; done
