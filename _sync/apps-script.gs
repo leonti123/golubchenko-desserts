@@ -8,7 +8,7 @@
 //   VK_APP_SECRET  «Защищённый ключ» of the VK mini app (signs the launch params)
 //   ALLOWED_USERS  optional extra VK user ids, comma-separated
 const GID = 226625031;
-const APP_ID = "__APP_ID__";
+const APP_ID = "54895901";
 const USERS = ["4867146", "538251826"]; // Елена Голубченко, Леонтий
 const REPO = "leonti123/golubchenko-desserts";
 const PATH = "_sync/data/market.json";
